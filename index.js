@@ -2,7 +2,6 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const express = require('express');
-const axios = require('axios');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const db = require('./db/postgres');
@@ -27,7 +26,7 @@ app.post("/token", async (req, res) => {
       //const hashPass = await bcrypt.hash(req.body.password, salt);
       let user = await db.getAuthUser({"username": req.body.username})
       try {
-        if (!user.password || !user.username) {
+        if (!user || !user.password || !user.username) {
           res.status(401).send('invalid username and password');
           return;
         }
