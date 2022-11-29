@@ -1,43 +1,65 @@
-const dotenv = require('dotenv')
-dotenv.config()
+const dotenv = require('dotenv');
+dotenv.config();
 
-const express = require('express')
-const axios = require('axios')
-const cors = require('cors')
-const bodyParser = require('body-parser')
-const db = require('./db/postgres')
+const express = require('express');
+const axios = require('axios');
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const db = require('./db/postgres');
+const jwt = require('jsonwebtoken');
+const bcrypt = require("bcrypt");
 
-const app = express()
-const PORT = process.env.PORT || 8081
+const app = express();
+const PORT = process.env.PORT || 8081;
 
-app.use(cors({origin: '*'}))
-app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({extended: true}))
+app.use(cors({origin: '*'}));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({extended: true}));
 
-app.get('/', async (req, res) => {
-  const username = req.query.username || 'bollatialfredo'
-  try {
-    const result = await axios.get(
-      `https://api.github.com/users/${username}/repos` 
-    );
-    const repos = result.data
-      .map((repo) => ({
-        name: repo.name,
-        url: repo.html_url,
-        description: repo.description,
-        stars: repo.stargazers_count
-      }))
-      .sort((a, b) => b.stars - a.stars)
+app.get('/users', db.getUsers);
 
-    res.send(repos);
-  } catch (error) {
-    console.log(error);
-    res.status(400).send('Error while getting list of repositories')
+app.get('/', (req, res) => res.send('pong') );
+
+app.post("/token", async (req, res) => {
+  if (req && req.body && req.body.username && req.body.password) {
+    try {
+      //const salt = await bcrypt.genSalt(parseInt(process.env.SALT_ROUNDS));
+      //const hashPass = await bcrypt.hash(req.body.password, salt);
+      let user = await db.getAuthUser({"username": req.body.username})
+      try {
+        if (!user.password || !user.username) {
+          res.status(401).send('invalid username and password');
+          return;
+        }
+        let resp = await bcrypt.compare(req.body.password, user.password);
+        if (resp) {
+          let jwtSecretKey = process.env.JWT_SECRET_KEY;
+          let data = {
+            time: Date(),
+            user_id: user.user_id,
+          }
+          const token = jwt.sign(data, jwtSecretKey);
+          delete user.password;
+          user.token = token;
+          res.send(user);
+        } else {
+          res.status(401).send('invalid username and password');
+        }
+      } catch (error) {
+        console.log(error);
+        res.status(500).send('Error on authentication process');
+      }
+    } catch (error) {
+      console.error(error.message || error);
+    }
+    
+  } else {
+    res.status(401).send('invalid user and password');
   }
-})
+});
 
-app.get('/users', db.getUsers)
+
 
 app.listen(PORT, () => {
-  console.log(`server started on port ${PORT}`)
+  console.log(`server started on port ${PORT}`);
 });

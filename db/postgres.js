@@ -18,7 +18,23 @@ const getUsers = (request, response) => {
   })
 }
 
+const getAuthUser = async (request) => {
+  return new Promise(function(resolve, reject) {
+    pool.query(`
+        SELECT * 
+        FROM users 
+        WHERE username = '${request.username}';`, (error, results) => {
+      if (error) {
+        reject(error)
+      }
+      if (!results || !results.rows || !results.rows[0]) resolve({})
+      resolve(results.rows[0]);
+    })
+  });  
+}
+
 module.exports = {
   getUsers,
+  getAuthUser,
   pool
 }
