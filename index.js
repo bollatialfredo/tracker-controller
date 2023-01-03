@@ -4,7 +4,8 @@ dotenv.config();
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const db = require('./db/postgres');
+const tagController = require('./controllers/tagController');
+const userController = require('./controllers/userController');
 const jwt = require('jsonwebtoken');
 const bcrypt = require("bcrypt");
 
@@ -15,7 +16,7 @@ app.use(cors({origin: '*'}));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
-app.get('/users', db.getUsers);
+app.get('/users', userController.getUsers);
 
 app.get('/', (req, res) => res.send('pong') );
 
@@ -24,7 +25,7 @@ app.post("/token", async (req, res) => {
     try {
       //const salt = await bcrypt.genSalt(parseInt(process.env.SALT_ROUNDS));
       //const hashPass = await bcrypt.hash(req.body.password, salt);
-      let user = await db.getAuthUser({"username": req.body.username})
+      let user = await userController.getAuthUser({"username": req.body.username})
       try {
         if (!user || !user.password || !user.username) {
           res.status(401).send('invalid username and password');

@@ -1,3 +1,4 @@
+
 const { Pool } = require('pg')
 const pool = new Pool({
   user: process.env.PG_USER,
@@ -8,4 +9,15 @@ const pool = new Pool({
   ssl: true
 })
 
-module.exports = Promise.all([pool])
+const getTags = (request, response) => {
+  pool.query('SELECT * FROM tag;', (error, results) => {
+    if (error) {
+      throw error
+    }
+    response.status(200).json(results.rows)
+  })
+}
+
+module.exports = {
+  getTags
+}
